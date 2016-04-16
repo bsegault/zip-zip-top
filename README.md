@@ -1,4 +1,4 @@
-ZipZipTop is a nodejs modules which relies on from [jszip](http://stuk.github.io/jszip/). It allows to simply add files & recursive folder in a zip.
+ZipZipTop is a nodejs modules which relies on [jszip](http://stuk.github.io/jszip/). It allows to simply add files & recursive folder in a zip.
 
 ## Installation
     $ npm install zip-zip-top
@@ -42,7 +42,7 @@ zip4.zipFolder("../myfolder",function(err){
 });
 
 //zip a folder and change folder destination name
-var zip6 = new EasyZip();
+var zip6 = new ZipZipTop();
 zip6.zipFolder("../myfolder",function(){
 if(err) {
 		console.log(err);
