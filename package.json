@@ -9,7 +9,7 @@
   "main": "zip-zip-top.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bsegault/easy-zip"
+    "url": "https://github.com/bsegault/zip-zip-top"
   },
   "keywords": [
     "nodejs",
