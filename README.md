@@ -78,5 +78,11 @@ if(err) {
 //zip.writeToFileSync(filePath);
 ```
 
+## Contributing
+
+This is a **very simple** project made for my personal needs. If you feel like coding some missing features,
+I would be glad to work with you.
+Suggestions and/or pull requests are welcome! 
+
 ## License
 MIT
