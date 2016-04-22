@@ -5,35 +5,53 @@ ZipZipTop is a nodejs modules which relies on [jszip](http://stuk.github.io/jszi
 
 ## Examples
 ```js
+var fs = require("fs");
 var ZipZipTop = require("zip-zip-top");
 
 var zip = new ZipZipTop();
 //add text
-zip.file("hello.txt","Hello World！");
-zip.writeToFile("text.zip");//write zip data to disk
+zip.file("hello.txt", "Hello World！");
+
+//write zip data to disk
+zip.writeToFile("text.zip", (err) => {
+	if(err) {
+		console.error(err);
+	}
+});
+
 
 //add folder
 var zip2 = new ZipZipTop();
 var jsFolder = zip2.folder("js");
-jsFolder.file("hello.js","alert("hello world")");
-zip2.writeToFile("folder.zip");
+jsFolder.file("hello.js", console.log("hello world"));
+
+//get a stream to handle events your way
+zip2.getStream().pipe(fs.createWriteStream("folder.zip"))
+.on("end", () => {
+	console.log("done");
+};
+
 
 //add file
 var zip3 = new ZipZipTop();
-zip3.addFile("main.js","easyzip.js",function(err){
+zip3.addFile("main.js", (err) => {
 	if(err) {
 		console.log(err);
 	}
-	zip3.writeToFile("file.zip");
+	zip3.writeToFile("file.zip", (writeErr) => {
+		if(writeErr) {
+			console.error(writeErr);
+		}
+	});
 });
 
 //zip a folder
 var zip4 = new ZipZipTop();
-zip4.zipFolder("../myfolder",function(err){
+zip4.zipFolder("../myfolder", (err) => {
 	if(err) {
 		console.log(err);
 	}
-	zip4.writeToFile("folder.zip", function(err) {
+	zip4.writeToFile("folder.zip", (err) => {
 		if(err) {
 			return console.log(err);
 		}
@@ -43,11 +61,11 @@ zip4.zipFolder("../myfolder",function(err){
 
 //zip a folder and change folder destination name
 var zip6 = new ZipZipTop();
-zip6.zipFolder("../myfolder",function(){
+zip6.zipFolder("../myfolder", () =>{
 if(err) {
 		console.log(err);
 	}
-	zip6.writeToFile("myfolder.zip", function(err) {
+	zip6.writeToFile("myfolder.zip", (err) => {
 		if(err) {
 			return console.log(err);
 		}
@@ -59,5 +77,6 @@ if(err) {
 //write to file sync
 //zip.writeToFileSync(filePath);
 ```
+
 ## License
 MIT
