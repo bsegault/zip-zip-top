@@ -1,120 +1,158 @@
+"use strict";
+
 var util = require("util"),
 	async = require("async"),
 	path = require("path"),
 	fs = require("fs"),
 	JSZip = require("jszip");
 
-/**
- * Creates an ZipZipTop object, the representation of a zip file
- * @constructor
- */
-function ZipZipTop() {
-	JSZip.call(this);
-}
 
-util.inherits(ZipZipTop, JSZip);
+class ZipZipTop extends JSZip {
 
-/**
- * Adds the given file to this zip
- * @param{String} filePath relative path to the file to add.
- * @param {Function} callback takes error & EasZyp object as parameter.
- * @param {Object} options options passed to jszip. base64 & binary field will be overriden.
- */
-ZipZipTop.prototype.addFile = function (filePath, callback, options) {
-	var self = this;
+	/**
+	 * Creates an ZipZipTop object, the representation of a zip file
+	 * @constructor
+	 */
+	constructor() {
+		super();
+	}
 
-	options = options || {};
-	options.base64 = false;
-	options.binary = true;
+	/**
+	 * Adds the given file to this zip
+	 * @param{String} filePath relative path to the file to add.
+	 * @param {Function} callback takes error & EasZyp object as parameter.
+	 * @param {OptionsObject} options options passed to JSZip. base64 & binary field will be overridden.
+	 */
+	addFile(filePath, callback, options) {
+		options = options || {};
+		options.base64 = false;
+		options.binary = true;
 
-	fs.readFile(path.resolve(filePath), function(err, data) {
-		if (err) {
-			callback(err, self);
+		fs.readFile(path.resolve(filePath), (err, data) => {
+			if (err) {
+				callback(err, this);
+				return this;
+			}
+
+			let root = options.rootFolder || "/";
+			delete options.rootFolder;
+
+			// We add the file to the zip archive
+			this.file(path.join(root, path.basename(filePath)), data, options);
+			return callback(null, this);
+		});
+	}
+
+	/**
+	 * Recursively Zip a folder
+	 * @param {String} folder rootFolder name to add
+	 * @param {function} callback takes err, ZipZipTop as arguments
+	 * @param {OptionsObject} options passed to JSZip. "noSymLinks" field added.
+	 */
+	addFolder(folder, callback, options) {
+		if (!fs.existsSync(path.resolve(folder)) || !fs.statSync(folder).isDirectory()) {
+			return callback(new Error(`Given '${folder}' doesn't exist or is not a directory.`), this);
 		}
-
-		var root = options.rootFolder || "/";
-		delete options.rootFolder;
-
-		self.file(path.join(root, path.basename(filePath)), data, options);
-		callback(null, self);
-	});
-};
-ZipZipTop.prototype.zipFile = ZipZipTop.prototype.addFile;
-
-/**
- * Recursively Zip a folder
- * @param {String} folder rootFolder name to add
- * @param {function} callback takes err, ZipZipTop as arguments
- * @param {Object} options passed to jszip. noSymLinks field
- */
-ZipZipTop.prototype.addFolder = function (folder, callback, options) {
-	if (!fs.existsSync(path.resolve(folder)) || !fs.statSync(folder).isDirectory()) {
-		callback(new Error(util.format("Given '%s' doesn't exist or is not a directory.", folder), this));
-	} else {
-		var self = this;
-
 		options = options || {};
 		options.rootFolder = options.rootFolder || path.basename(folder);
 
-		fs.readdir(folder, function(err, files) {
-			if(err) {
-				return callback(err, self);
+		fs.readdir(folder, (err, files) => {
+			if (err) {
+				return callback(err, this);
 			}
-			async.each(files, function(item, done) {
-				var subPath = path.resolve(folder, item),
+			async.each(files, (item, done) => {
+				let subPath = path.resolve(folder, item),
 					newOptions = JSON.parse(JSON.stringify(options));
 
-				fs.stat(subPath, function(err, stats) {
-					if(err) {
+				fs.stat(subPath, (err, stats) => {
+					if (err) {
 						return done(err);
 					}
-					if(!stats.isSymbolicLink() || !options.noSymLinks) {
+					if (!stats.isSymbolicLink() || !options.noSymLinks) {
 						if (stats.isDirectory()) {
 							newOptions.rootFolder = path.join(options.rootFolder, item);
-							self.addFolder(subPath, done, newOptions);
+							this.addFolder(subPath, done, newOptions);
 						} else if (stats.isFile()) {
-							self.addFile(subPath, done, newOptions);
+							this.addFile(subPath, done, newOptions);
 						}
 					}
 				});
-			}, function(err) {
-				if(err) {
-					return callback(err, self);
+			}, (err) => {
+				if (err) {
+					return callback(err, this);
 				}
-				callback(null, self);
+				return callback(null, this);
 			});
 		});
 	}
-};
-ZipZipTop.prototype.zipFolder = ZipZipTop.prototype.addFolder;
 
-/**
- * Writes the current object to the given filePath
- * @param filePath path to the file to write
- * @param callback passed to fs.writeFile
- */
-ZipZipTop.prototype.writeToFile = function (filePath, callback) {
-	var data = this.generate({type:"nodebuffer", compression: "DEFLATE"});
-	fs.writeFile(filePath, data, 'binary', callback);
-};
-
-/**
- * Same at @see{writeToFile}
- * @param filePath path to the file to write
- */
-ZipZipTop.prototype.writeToFileSync = function (filePath) {
-	var data = this.generate({type:"nodebuffer", compression: "DEFLATE"});
-	fs.writeFileSync(filePath, data, 'binary');
-};
-
-ZipZipTop.prototype.clone = function () {
-	var newObj = new ZipZipTop();
-	for (var i in this) {
-		if (typeof this[i] !== "function") {
-			newObj[i] = this[i];
+	/**
+	 * Writes the current object to the given filePath
+	 * @param filePath {string} - path to the file to write
+	 * @param compressionLevel {number=} - Compression level, between 1 (best speed) and 9 (best compression). Defaults to 6.
+	 * @param callback {function} - Passed to fs.writeFile, can take an Error parameter
+	 */
+	writeToFile(filePath, compressionLevel, callback) {
+		if(!callback && "function" === typeof compressionLevel) {
+			callback = compressionLevel;
+			compressionLevel = 6;
 		}
+		
+		let options = {
+			type: "nodebuffer",
+			compression: "DEFLATE",
+			compressionOptions: {level: compressionLevel}
+		};
+		this.generateAsync(options).then((data) => {
+			fs.writeFile(filePath, data, "binary", callback);
+		});
 	}
-	return newObj;
-};
+
+	/**
+	 * Writes the current object to the given filePath
+	 * @param compressionLevel {number} - Compression level, between 1 (best speed) and 9 (best compression). Default to 6.
+	 * @returns {stream} A stream to write the file
+	 */
+	getStream(compressionLevel) {
+		let options = {
+			type: "nodebuffer",
+			compression: "DEFLATE",
+			compressionOptions: {level: compressionLevel || 6},
+			streamFiles: true
+		};
+		return this.generateNodeStream(options);
+	}
+
+	clone() {
+		var newObj = new ZipZipTop();
+		for (let i in this) {
+			if (this.hasOwnProperty(i) && typeof this[i] !== "function") {
+				newObj[i] = this[i];
+			}
+		}
+		return newObj;
+	}
+
+}
+ZipZipTop.prototype.zipFolder = ZipZipTop.prototype.addFolder;
+ZipZipTop.prototype.zipFile = ZipZipTop.prototype.addFile;
+
+/**
+ * The options accepted by the file() function of JSZip.
+ * @see {@link https://stuk.github.io/jszip/documentation/api_jszip/file_data.html}
+ *
+ * @typedef {{
+ * 		date: date,
+ * 		compression: string
+ * 		compressionOptions: {level: number},
+ * 		comment: string,
+ * 		createFolders: boolean,
+ * 		unixPermissions: number
+ * 		dosPermissions: number,
+ * 		dir: boolean,
+ * 		rootFolder: string,
+ *	 	noSymLinks: boolean
+ * 	}} OptionsObject
+ */
 
 module.exports = ZipZipTop;

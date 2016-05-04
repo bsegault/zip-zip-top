@@ -1,7 +1,7 @@
 {
   "name": "zip-zip-top",
-  "version": "0.1.1",
-  "description": "Easily zip files & folder. Relies on jszip (https://stuk.github.io/jzip).",
+  "version": "0.2.0",
+  "description": "Easily zip files & folders. Relies on jszip (https://stuk.github.io/jzip).",
   "author": {
     "name": "Benjamin SEGAULT",
     "email": "benjamin.segault@gmail.com"
@@ -20,7 +20,7 @@
   ],
   "dependencies": {
     "async": "latest",
-    "jszip": "^2.5.0"
+    "jszip": "^3.0.0"
   },
   "license": "MIT"
 }
